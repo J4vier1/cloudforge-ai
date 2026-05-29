@@ -11,6 +11,7 @@ class OperatingSystem(StrEnum):
 class CloudProvider(StrEnum):
     azure = "azure"
     huawei = "huawei"
+    aws = "aws"
 
 
 class WorkloadCriticality(StrEnum):
@@ -68,6 +69,17 @@ class SizingRecommendation(BaseModel):
     rationale: str
 
 
+class CloudRecommendation(BaseModel):
+    provider: CloudProvider
+    compute_sku: str
+    disk_type: str
+    network_design: str
+    identity_design: str
+    backup_design: str
+    terraform_resources: list[str]
+    notes: list[str]
+
+
 class MigrationAssessmentResponse(BaseModel):
     vm_name: str
     application_name: str | None = None
@@ -77,6 +89,7 @@ class MigrationAssessmentResponse(BaseModel):
     risk_level: str
     readiness_score: int
     recommended_sizing: SizingRecommendation
+    cloud_recommendation: CloudRecommendation
     recommendations: list[str]
     next_steps: list[str]
 

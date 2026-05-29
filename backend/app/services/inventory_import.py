@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.models.migration import (
+    CloudProvider,
     InventoryUploadItem,
     InventoryUploadResponse,
     MigrationAssessmentRequest,
@@ -12,13 +13,22 @@ from app.models.migration import (
 from app.services.migration_assessment import assess_migration_candidate
 
 
-def assess_inventory_csv(csv_content: str) -> InventoryUploadResponse:
+def assess_inventory_csv(
+    csv_content: str,
+    target_cloud: CloudProvider | None = None,
+    target_region: str | None = None,
+) -> InventoryUploadResponse:
     reader = csv.DictReader(StringIO(csv_content))
     results: list[InventoryUploadItem] = []
 
     for row_number, row in enumerate(reader, start=2):
         try:
-            request = MigrationAssessmentRequest.model_validate(_normalize_row(row))
+            normalized_row = _normalize_row(row)
+            if target_cloud is not None:
+                normalized_row["target_cloud"] = target_cloud.value
+            if target_region:
+                normalized_row["target_region"] = target_region
+            request = MigrationAssessmentRequest.model_validate(normalized_row)
         except ValidationError as exc:
             results.append(
                 InventoryUploadItem(

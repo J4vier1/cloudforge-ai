@@ -1,9 +1,38 @@
+const REGIONS = {
+  azure: [
+    { value: "eastus", label: "East US" },
+    { value: "eastus2", label: "East US 2" },
+    { value: "westus2", label: "West US 2" },
+    { value: "westeurope", label: "West Europe" },
+    { value: "northeurope", label: "North Europe" },
+    { value: "brazilsouth", label: "Brazil South" },
+    { value: "mexicocentral", label: "Mexico Central" },
+    { value: "southeastasia", label: "Southeast Asia" },
+  ],
+  aws: [
+    { value: "us-east-1", label: "US East (N. Virginia)" },
+    { value: "us-east-2", label: "US East (Ohio)" },
+    { value: "us-west-2", label: "US West (Oregon)" },
+    { value: "eu-west-1", label: "Europe (Ireland)" },
+    { value: "eu-central-1", label: "Europe (Frankfurt)" },
+    { value: "sa-east-1", label: "South America (São Paulo)" },
+    { value: "ap-southeast-1", label: "Asia Pacific (Singapore)" },
+  ],
+  huawei: [
+    { value: "la-north-4", label: "LA North 4 (Bogotá)" },
+    { value: "la-santiago", label: "LA South (Santiago)" },
+    { value: "cn-north-4", label: "CN North 4 (Beijing)" },
+    { value: "ap-southeast-1", label: "AP Southeast 1 (Guangzhou)" },
+    { value: "eu-west-101", label: "EU West 101 (Dublin)" },
+  ],
+};
+
 const sampleCsv = `vm_name,application_name,environment,business_owner,technical_owner,operating_system,os_version,current_platform,datacenter_location,target_cloud,target_region,cpu_cores,memory_gb,storage_gb,disk_count,average_cpu_percent,peak_cpu_percent,average_memory_percent,peak_memory_percent,average_disk_iops,average_disk_throughput_mbps,network_in_mbps,network_out_mbps,criticality,uptime_requirement,rpo_minutes,rto_minutes,backup_policy,maintenance_window,uses_active_directory,domain_joined,requires_static_ip,requires_vpn_connectivity,internet_access_required,listening_ports,dependency_flows,compliance_requirements,migration_notes
 erp-app-01,ERP,prod,Finance,IT Operations,windows,Windows Server 2019,VMware,Mexico City DC1,azure,eastus,8,32,500,3,55,82,68,91,1200,80,25,18,high,99.9%,60,240,"Daily, 30 days","Sunday 01:00-04:00",true,true,true,true,false,"443;3389","erp-app-01->sql-prod-01:1433;erp-app-01->dc-01:389;erp-app-01->fileserver-01:445",ISO 27001,Requires vendor validation before cutover
 sql-prod-01,ERP Database,prod,Finance,DBA Team,windows,Windows Server 2019,VMware,Mexico City DC1,azure,eastus,16,64,2048,6,62,88,74,93,5500,240,40,35,mission_critical,99.95%,15,120,"Hourly, 35 days","Sunday 00:00-03:00",true,true,true,true,false,"1433;3389","sql-prod-01->dc-01:389;erp-app-01->sql-prod-01:1433",ISO 27001,Requires database backup validation and performance testing
 vpn-gw-01,VPN Gateway,prod,Network,Network Operations,linux,Ubuntu Server 22.04,Hyper-V,Mexico City DC1,huawei,la-santiago,4,16,200,2,72,91,64,78,600,45,90,120,high,99.9%,60,180,"Daily, 14 days","Saturday 23:00-02:00",false,false,true,true,true,"500;4500;22","vpn-gw-01->firewall-01:500;vpn-gw-01->firewall-01:4500",Internal Security Policy,Validate VPN tunnels and routing before migration
 ad-dc-01,Active Directory,prod,IT,Identity Team,windows,Windows Server 2022,VMware,Mexico City DC1,azure,eastus,4,16,250,2,35,65,58,76,700,35,20,20,mission_critical,99.95%,15,120,"System state daily, 30 days","Sunday 02:00-05:00",true,true,true,true,false,"53;88;135;389;445;636;3389","ad-dc-01->dns-forwarder-01:53;all-prod-subnets->ad-dc-01:389",Internal Security Policy,Plan identity migration carefully and validate DNS dependency
-web-dev-01,Customer Portal,dev,Digital,App Team,linux,Ubuntu Server 22.04,VMware,Mexico City DC1,azure,eastus,2,8,100,1,28,55,42,67,250,20,15,30,low,95%,1440,1440,"Weekly, 14 days","Any weekday after 19:00",false,false,false,false,true,"80;443;22","web-dev-01->api-dev-01:8080",None,Good candidate for rehost or containerization pilot`;
+web-dev-01,Customer Portal,dev,Digital,App Team,linux,Ubuntu Server 22.04,VMware,Mexico City DC1,aws,us-east-1,2,8,100,1,28,55,42,67,250,20,15,30,low,95%,1440,1440,"Weekly, 14 days","Any weekday after 19:00",false,false,false,false,true,"80;443;22","web-dev-01->api-dev-01:8080",None,Good candidate for rehost or containerization pilot`;
 
 const state = {
   response: null,
@@ -103,9 +132,9 @@ function renderTable(assessments) {
           <td>${escapeHtml(assessment.target_cloud)} / ${escapeHtml(assessment.target_region || "-")}</td>
           <td><span class="risk ${assessment.risk_level}">${escapeHtml(assessment.risk_level)}</span></td>
           <td><span class="score">${assessment.readiness_score}</span></td>
-          <td>${assessment.recommended_sizing.cpu_cores}</td>
-          <td>${assessment.recommended_sizing.memory_gb} GB</td>
-          <td>${assessment.recommended_sizing.storage_gb} GB</td>
+        <td>${escapeHtml(assessment.cloud_recommendation?.compute_sku || `${assessment.recommended_sizing.cpu_cores} cores`)}</td>
+        <td>${assessment.recommended_sizing.memory_gb} GB</td>
+        <td>${escapeHtml(assessment.cloud_recommendation?.disk_type || `${assessment.recommended_sizing.storage_gb} GB`)}</td>
         </tr>
       `;
     })
@@ -135,10 +164,23 @@ function renderDetail(assessment) {
     <div class="detail-section">
       <h2>Recommended sizing</h2>
       <ul class="detail-list">
+        <li>${escapeHtml(assessment.cloud_recommendation.compute_sku)} compute SKU</li>
         <li>${assessment.recommended_sizing.cpu_cores} CPU cores</li>
         <li>${assessment.recommended_sizing.memory_gb} GB memory</li>
-        <li>${assessment.recommended_sizing.storage_gb} GB storage</li>
+        <li>${assessment.recommended_sizing.storage_gb} GB storage on ${escapeHtml(assessment.cloud_recommendation.disk_type)}</li>
       </ul>
+    </div>
+    <div class="detail-section">
+      <h2>Cloud design</h2>
+      <ul class="detail-list">
+        <li>${escapeHtml(assessment.cloud_recommendation.network_design)}</li>
+        <li>${escapeHtml(assessment.cloud_recommendation.identity_design)}</li>
+        <li>${escapeHtml(assessment.cloud_recommendation.backup_design)}</li>
+      </ul>
+    </div>
+    <div class="detail-section">
+      <h2>Terraform resources</h2>
+      <ul class="detail-list">${assessment.cloud_recommendation.terraform_resources.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     </div>
     <div class="detail-section">
       <h2>Recommendations</h2>
@@ -186,6 +228,8 @@ function exportCsv() {
     "recommended_cpu",
     "recommended_memory_gb",
     "recommended_storage_gb",
+    "compute_sku",
+    "disk_type",
   ];
   const lines = rows.map((item) =>
     [
@@ -198,6 +242,8 @@ function exportCsv() {
       item.recommended_sizing.cpu_cores,
       item.recommended_sizing.memory_gb,
       item.recommended_sizing.storage_gb,
+      item.cloud_recommendation.compute_sku,
+      item.cloud_recommendation.disk_type,
     ]
       .map(csvEscape)
       .join(",")

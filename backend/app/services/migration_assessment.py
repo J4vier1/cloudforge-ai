@@ -4,6 +4,7 @@ from app.models.migration import (
     SizingRecommendation,
     WorkloadCriticality,
 )
+from app.services.cloud_recommendations import build_cloud_recommendation
 
 
 def assess_migration_candidate(
@@ -22,6 +23,15 @@ def assess_migration_candidate(
     risk_level = _calculate_risk_level(request)
     readiness_score = _calculate_readiness_score(request, risk_level)
 
+    sizing = SizingRecommendation(
+        cpu_cores=recommended_cpu,
+        memory_gb=recommended_memory,
+        storage_gb=recommended_storage,
+        rationale="Initial lift-and-shift sizing with capacity headroom for observed utilization.",
+    )
+
+    cloud_recommendation = build_cloud_recommendation(request, sizing)
+
     return MigrationAssessmentResponse(
         vm_name=request.vm_name,
         application_name=request.application_name,
@@ -30,16 +40,13 @@ def assess_migration_candidate(
         migration_strategy="rehost",
         risk_level=risk_level,
         readiness_score=readiness_score,
-        recommended_sizing=SizingRecommendation(
-            cpu_cores=recommended_cpu,
-            memory_gb=recommended_memory,
-            storage_gb=recommended_storage,
-            rationale="Initial lift-and-shift sizing with capacity headroom for observed utilization.",
-        ),
+        recommended_sizing=sizing,
+        cloud_recommendation=cloud_recommendation,
         recommendations=[
             "Validate application dependencies before migration.",
             "Confirm backup, rollback, and maintenance window requirements.",
             "Run network latency checks between source, VPN, and target cloud landing zone.",
+            f"Validate target cloud SKU availability for {cloud_recommendation.compute_sku}.",
             "Generate Terraform after target subscription/project and region are selected.",
             *_identity_recommendations(request),
             *_network_recommendations(request),

@@ -4,7 +4,7 @@ AI Cloud Engineering Lab for building cloud-native and AI-native engineering pla
 
 ## First Project: Cloud Migration Assistant
 
-The initial service is a FastAPI backend that assesses virtual machines and returns a first-pass lift-and-shift recommendation for Azure or Huawei Cloud.
+The initial service is a FastAPI backend that assesses virtual machines and returns a first-pass lift-and-shift recommendation for Azure, Huawei Cloud, or AWS.
 
 ## Run Locally
 

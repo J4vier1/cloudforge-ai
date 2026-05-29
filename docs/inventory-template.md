@@ -9,7 +9,7 @@ Use this template to collect the minimum information required to assess virtual 
 | Client name |  |
 | Business unit |  |
 | Technical contact |  |
-| Cloud target | Azure / Huawei Cloud |
+| Cloud target | Azure / Huawei Cloud / AWS |
 | Target region |  |
 | Assessment date |  |
 

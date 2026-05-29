@@ -47,10 +47,27 @@
             <h2>Client inventory</h2>
             <p id="fileName">No inventory selected</p>
           </div>
-          <label class="file-picker">
-            <input id="inventoryFile" type="file" accept=".csv,text/csv" />
-            Select CSV
-          </label>
+          <div class="upload-controls">
+            <div class="select-group">
+              <label for="targetCloud">Target cloud</label>
+              <select id="targetCloud">
+                <option value="">From CSV</option>
+                <option value="azure">Azure</option>
+                <option value="aws">AWS</option>
+                <option value="huawei">Huawei Cloud</option>
+              </select>
+            </div>
+            <div class="select-group">
+              <label for="targetRegion">Target region</label>
+              <select id="targetRegion" disabled>
+                <option value="">From CSV</option>
+              </select>
+            </div>
+            <label class="file-picker">
+              <input id="inventoryFile" type="file" accept=".csv,text/csv" />
+              Select CSV
+            </label>
+          </div>
         </section>
 
         <section class="metrics-grid">
@@ -96,9 +113,9 @@
                     <th>Cloud</th>
                     <th>Risk</th>
                     <th>Readiness</th>
-                    <th>CPU</th>
+                    <th>Compute</th>
                     <th>RAM</th>
-                    <th>Storage</th>
+                    <th>Disk</th>
                   </tr>
                 </thead>
                 <tbody id="resultsBody">
