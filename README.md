@@ -33,6 +33,33 @@ cd backend
 pytest
 ```
 
+## Upload A Client Inventory CSV
+
+Start the API and open Swagger:
+
+```text
+http://localhost:8000/docs
+```
+
+Use:
+
+```text
+POST /api/v1/inventory/upload
+```
+
+Upload the sample file:
+
+```text
+docs/sample-inventory.csv
+```
+
+The API validates each row and returns:
+
+- Total rows processed.
+- Valid and invalid row counts.
+- Assessment output per valid VM.
+- Validation errors per invalid VM.
+
 ## Kubernetes
 
 ```powershell
