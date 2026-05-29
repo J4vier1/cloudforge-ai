@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CloudForge AI | Migration Assistant</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">CF</div>
+          <div>
+            <strong>CloudForge AI</strong>
+            <span>Migration Assistant</span>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a class="active" href="#assessment">Assessment</a>
+          <a href="http://127.0.0.1:8000/docs">API Docs</a>
+          <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+
+        <div class="sidebar-panel">
+          <span class="panel-label">API Status</span>
+          <strong id="apiStatus">Checking...</strong>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Cloud Migration Assessment</p>
+            <h1>Inventory review</h1>
+          </div>
+          <div class="actions">
+            <button class="ghost" id="loadSampleBtn" type="button">Load Sample</button>
+            <button class="ghost" id="exportJsonBtn" type="button" disabled>Export JSON</button>
+            <button class="primary" id="exportCsvBtn" type="button" disabled>Export CSV</button>
+          </div>
+        </header>
+
+        <section class="upload-band" id="assessment">
+          <div>
+            <h2>Client inventory</h2>
+            <p id="fileName">No inventory selected</p>
+          </div>
+          <label class="file-picker">
+            <input id="inventoryFile" type="file" accept=".csv,text/csv" />
+            Select CSV
+          </label>
+        </section>
+
+        <section class="metrics-grid">
+          <article class="metric">
+            <span>Total VMs</span>
+            <strong id="totalRows">0</strong>
+          </article>
+          <article class="metric">
+            <span>Valid Rows</span>
+            <strong id="validRows">0</strong>
+          </article>
+          <article class="metric">
+            <span>Invalid Rows</span>
+            <strong id="invalidRows">0</strong>
+          </article>
+          <article class="metric">
+            <span>Avg Readiness</span>
+            <strong id="avgReadiness">0</strong>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <div class="table-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Assessment results</h2>
+                <p id="resultSummary">Upload an inventory to generate results.</p>
+              </div>
+              <div class="filters">
+                <button class="filter active" data-filter="all" type="button">All</button>
+                <button class="filter" data-filter="high" type="button">High</button>
+                <button class="filter" data-filter="medium" type="button">Medium</button>
+                <button class="filter" data-filter="low" type="button">Low</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>VM</th>
+                    <th>Application</th>
+                    <th>Cloud</th>
+                    <th>Risk</th>
+                    <th>Readiness</th>
+                    <th>CPU</th>
+                    <th>RAM</th>
+                    <th>Storage</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsBody">
+                  <tr>
+                    <td colspan="8" class="empty">No assessment data yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="detail-panel">
+            <div class="panel-header">
+              <div>
+                <h2 id="detailTitle">VM detail</h2>
+                <p id="detailSubtitle">Select a VM from the results table.</p>
+              </div>
+            </div>
+            <div id="detailContent" class="detail-empty">No VM selected.</div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

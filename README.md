@@ -20,6 +20,12 @@ API docs:
 http://localhost:8000/docs
 ```
 
+Web app:
+
+```text
+http://localhost:8000/dashboard/
+```
+
 ## Run With Docker
 
 ```powershell
