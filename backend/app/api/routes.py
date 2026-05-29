@@ -1,7 +1,6 @@
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.models.migration import (
-    CloudProvider,
     InventoryUploadResponse,
     MigrationAssessmentRequest,
     MigrationAssessmentResponse,
@@ -40,11 +39,7 @@ def assess_migration(request: MigrationAssessmentRequest) -> MigrationAssessment
     response_model=InventoryUploadResponse,
     tags=["inventory"],
 )
-async def upload_inventory(
-    file: UploadFile = File(...),
-    target_cloud: CloudProvider | None = Form(default=None),
-    target_region: str | None = Form(default=None),
-) -> InventoryUploadResponse:
+async def upload_inventory(file: UploadFile = File(...)) -> InventoryUploadResponse:
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV inventory files are supported.")
 
@@ -54,8 +49,4 @@ async def upload_inventory(
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="CSV file must be UTF-8 encoded.") from exc
 
-    return assess_inventory_csv(
-        csv_content,
-        target_cloud=target_cloud,
-        target_region=target_region or None,
-    )
+    return assess_inventory_csv(csv_content)
