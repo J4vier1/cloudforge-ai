@@ -18,7 +18,8 @@
         </div>
 
         <nav class="nav">
-          <a class="active" href="#assessment">Assessment</a>
+          <a class="tab-link active" href="#assessment" data-tab="assessment">Assessment</a>
+          <a class="tab-link" href="#migration-plan" data-tab="migration-plan">Migration Plan</a>
           <a href="http://127.0.0.1:8000/docs">API Docs</a>
           <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
@@ -135,6 +136,50 @@
               </div>
             </div>
             <div id="detailContent" class="detail-empty">No VM selected.</div>
+          </aside>
+        </section>
+
+        <section id="migration-plan" class="content-grid plan-section hidden">
+          <div class="table-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Migration Plans</h2>
+                <p id="plansSummary">Create or select a migration plan to track progress.</p>
+              </div>
+            </div>
+            <div class="plan-form">
+              <input type="text" id="planName" placeholder="Plan name" />
+              <button id="createPlanBtn" class="primary" type="button">Create Plan</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Plan</th>
+                    <th>Owner</th>
+                    <th>Cloud</th>
+                    <th>Progress</th>
+                    <th>Tasks</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="plansBody">
+                  <tr>
+                    <td colspan="6" class="empty">No migration plans yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="detail-panel">
+            <div class="panel-header">
+              <div>
+                <h2 id="planDetailTitle">Plan details</h2>
+                <p id="planDetailSubtitle">Select a plan to view its tasks.</p>
+              </div>
+            </div>
+            <div id="planDetailContent" class="detail-empty">No plan selected.</div>
           </aside>
         </section>
       </main>

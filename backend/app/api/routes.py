@@ -5,9 +5,20 @@ from app.models.migration import (
     InventoryUploadResponse,
     MigrationAssessmentRequest,
     MigrationAssessmentResponse,
+    MigrationPlanCreateRequest,
+    MigrationPlanResponse,
+    MigrationTaskStatus,
 )
 from app.services.inventory_import import assess_inventory_csv
 from app.services.migration_assessment import assess_migration_candidate
+from app.services.migration_planner import (
+    add_tasks_to_plan,
+    create_migration_plan,
+    delete_migration_plan,
+    get_migration_plan,
+    list_migration_plans,
+    update_task_status,
+)
 
 router = APIRouter()
 
@@ -59,3 +70,64 @@ async def upload_inventory(
         target_cloud=target_cloud,
         target_region=target_region or None,
     )
+
+
+@router.post(
+    "/api/v1/migration-plans",
+    response_model=MigrationPlanResponse,
+    tags=["migration-plans"],
+)
+def create_plan(request: MigrationPlanCreateRequest) -> MigrationPlanResponse:
+    """Create a new migration plan."""
+    return create_migration_plan(request)
+
+
+@router.get(
+    "/api/v1/migration-plans",
+    response_model=list[MigrationPlanResponse],
+    tags=["migration-plans"],
+)
+def list_plans() -> list[MigrationPlanResponse]:
+    """List all migration plans."""
+    return list_migration_plans()
+
+
+@router.get(
+    "/api/v1/migration-plans/{plan_id}",
+    response_model=MigrationPlanResponse,
+    tags=["migration-plans"],
+)
+def get_plan(plan_id: str) -> MigrationPlanResponse:
+    """Get a specific migration plan."""
+    plan = get_migration_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Migration plan not found.")
+    return plan
+
+
+@router.patch(
+    "/api/v1/migration-plans/{plan_id}/tasks/{vm_name}",
+    response_model=MigrationPlanResponse,
+    tags=["migration-plans"],
+)
+def update_task(
+    plan_id: str,
+    vm_name: str,
+    status: MigrationTaskStatus,
+) -> MigrationPlanResponse:
+    """Update the status of a migration task."""
+    plan = update_task_status(plan_id, vm_name, status)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Migration plan not found.")
+    return plan
+
+
+@router.delete(
+    "/api/v1/migration-plans/{plan_id}",
+    tags=["migration-plans"],
+)
+def delete_plan(plan_id: str) -> dict[str, str]:
+    """Delete a migration plan."""
+    if not delete_migration_plan(plan_id):
+        raise HTTPException(status_code=404, detail="Migration plan not found.")
+    return {"message": "Migration plan deleted."}

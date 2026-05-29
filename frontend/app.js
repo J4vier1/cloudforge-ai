@@ -38,6 +38,9 @@ const state = {
   response: null,
   filter: "all",
   selectedVm: null,
+  plans: [],
+  selectedPlan: null,
+  currentTab: "assessment",
 };
 
 const elements = {
@@ -60,6 +63,17 @@ const elements = {
   detailContent: document.querySelector("#detailContent"),
   toast: document.querySelector("#toast"),
   filters: document.querySelectorAll(".filter"),
+  // Migration plan elements
+  planName: document.querySelector("#planName"),
+  createPlanBtn: document.querySelector("#createPlanBtn"),
+  plansSummary: document.querySelector("#plansSummary"),
+  plansBody: document.querySelector("#plansBody"),
+  planDetailTitle: document.querySelector("#planDetailTitle"),
+  planDetailSubtitle: document.querySelector("#planDetailSubtitle"),
+  planDetailContent: document.querySelector("#planDetailContent"),
+  tabLinks: document.querySelectorAll(".tab-link"),
+  assessmentSection: document.querySelector("#assessment"),
+  migrationPlanSection: document.querySelector("#migration-plan"),
 };
 
 async function checkApi() {
@@ -338,5 +352,187 @@ elements.filters.forEach((button) => {
   });
 });
 
+// Tab navigation
+elements.tabLinks.forEach((link) => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchTab(link.dataset.tab);
+  });
+});
+
+// Migration plan actions
+elements.createPlanBtn?.addEventListener("click", createMigrationPlan);
+elements.planName?.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") createMigrationPlan();
+});
+
+// ===== Migration Plans =====
+
+async function loadMigrationPlans() {
+  try {
+    const response = await fetch("/api/v1/migration-plans");
+    const plans = await response.json();
+    state.plans = plans;
+    renderPlans();
+  } catch (error) {
+    showToast("Failed to load migration plans");
+  }
+}
+
+async function createMigrationPlan() {
+  const name = elements.planName.value.trim();
+  if (!name) {
+    showToast("Enter a plan name");
+    return;
+  }
+
+  const requestBody = {
+    name: name,
+    description: `Migration plan created on ${new Date().toLocaleDateString()}`,
+    owner: "CloudForge User",
+    target_cloud: elements.targetCloud.value || "azure",
+    target_region: elements.targetRegion.value || null,
+    tasks: [],
+  };
+
+  try {
+    const response = await fetch("/api/v1/migration-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    if (!response.ok) throw new Error("Failed to create plan");
+    
+    elements.planName.value = "";
+    await loadMigrationPlans();
+    showToast(`Plan "${name}" created successfully`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function updateTaskStatus(planId, vmName, status) {
+  try {
+    const response = await fetch(
+      `/api/v1/migration-plans/${planId}/tasks/${vmName}?status=${status}`,
+      { method: "PATCH" }
+    );
+    if (!response.ok) throw new Error("Failed to update task");
+    
+    await loadMigrationPlans();
+    showToast(`Task updated: ${vmName} → ${status}`);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderPlans() {
+  if (state.plans.length === 0) {
+    elements.plansBody.innerHTML = `<tr><td colspan="6" class="empty">No migration plans yet. Create one to get started.</td></tr>`;
+    return;
+  }
+
+  elements.plansBody.innerHTML = state.plans
+    .map((plan) => `
+      <tr data-plan-id="${plan.plan_id}" class="plan-row">
+        <td><strong>${escapeHtml(plan.name)}</strong></td>
+        <td>${escapeHtml(plan.owner || "-")}</td>
+        <td>${escapeHtml(plan.target_cloud)}${plan.target_region ? ` / ${plan.target_region}` : ""}</td>
+        <td>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${plan.progress_percentage}%"></div>
+            <span>${plan.progress_percentage}%</span>
+          </div>
+        </td>
+        <td>${plan.completed_vms} / ${plan.total_vms}</td>
+        <td><button class="small" data-plan-id="${plan.plan_id}" onclick="selectPlan('${plan.plan_id}')">View</button></td>
+      </tr>
+    `)
+    .join("");
+}
+
+function selectPlan(planId) {
+  const plan = state.plans.find((p) => p.plan_id === planId);
+  if (!plan) return;
+
+  state.selectedPlan = plan;
+  elements.planDetailTitle.textContent = plan.name;
+  elements.planDetailSubtitle.textContent = `${plan.total_vms} VMs · ${plan.progress_percentage}% complete`;
+
+  const tasksHtml = plan.tasks.length
+    ? `
+      <table class="tasks-table">
+        <thead>
+          <tr>
+            <th>VM</th>
+            <th>Scheduled</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${plan.tasks
+            .map(
+              (task) => `
+            <tr>
+              <td>${escapeHtml(task.vm_name)}</td>
+              <td>${task.scheduled_date}</td>
+              <td><span class="status ${task.status}">${task.status}</span></td>
+              <td>
+                ${task.status !== "completed"
+                  ? `<button class="tiny" onclick="updateTaskStatus('${plan.plan_id}', '${task.vm_name}', 'completed')">Mark Done</button>`
+                  : "✓"}
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `
+    : `<p>No tasks in this plan yet. Add VMs from your assessment to create tasks.</p>`;
+
+  elements.planDetailContent.innerHTML = `
+    <div class="plan-details">
+      <div class="detail-section">
+        <h3>Plan Info</h3>
+        <ul class="detail-list">
+          <li><strong>Created:</strong> ${new Date(plan.created_date).toLocaleDateString()}</li>
+          <li><strong>Owner:</strong> ${escapeHtml(plan.owner || "-")}</li>
+          <li><strong>Target Cloud:</strong> ${escapeHtml(plan.target_cloud)}</li>
+          <li><strong>Target Region:</strong> ${escapeHtml(plan.target_region || "-")}</li>
+          <li><strong>Progress:</strong> ${plan.completed_vms} / ${plan.total_vms} VMs completed</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Migration Tasks</h3>
+        ${tasksHtml}
+      </div>
+    </div>
+  `;
+}
+
+function switchTab(tabName) {
+  state.currentTab = tabName;
+  
+  // Update nav links
+  elements.tabLinks.forEach((link) => {
+    if (link.dataset.tab === tabName) {
+      link.classList.add("active");
+    } else {
+      link.classList.remove("active");
+    }
+  });
+
+  // Update sections visibility
+  elements.assessmentSection.classList.toggle("hidden", tabName !== "assessment");
+  elements.migrationPlanSection.classList.toggle("hidden", tabName !== "migration-plan");
+
+  if (tabName === "migration-plan") {
+    loadMigrationPlans();
+  }
+}
+
 checkApi();
 render();
+loadMigrationPlans();

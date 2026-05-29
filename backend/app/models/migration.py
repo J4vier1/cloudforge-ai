@@ -105,3 +105,55 @@ class InventoryUploadResponse(BaseModel):
     valid_rows: int
     invalid_rows: int
     results: list[InventoryUploadItem]
+
+
+class MigrationTaskStatus(StrEnum):
+    planned = "planned"
+    in_progress = "in_progress"
+    completed = "completed"
+    failed = "failed"
+    deferred = "deferred"
+
+
+class MigrationTask(BaseModel):
+    vm_name: str
+    scheduled_date: str  # ISO format: YYYY-MM-DD
+    status: MigrationTaskStatus = MigrationTaskStatus.planned
+    notes: str | None = None
+    completed_date: str | None = None
+
+
+class MigrationPlan(BaseModel):
+    plan_id: str = Field(default_factory=lambda: f"plan_{int(__import__('time').time() * 1000)}")
+    name: str
+    description: str | None = None
+    created_date: str = Field(default_factory=lambda: __import__('datetime').datetime.now().isoformat())
+    owner: str | None = None
+    tasks: list[MigrationTask] = Field(default_factory=list)
+    target_cloud: CloudProvider = CloudProvider.azure
+    target_region: str | None = None
+    total_vms: int = 0
+    completed_vms: int = 0
+
+
+class MigrationPlanCreateRequest(BaseModel):
+    name: str
+    description: str | None = None
+    owner: str | None = None
+    target_cloud: CloudProvider = CloudProvider.azure
+    target_region: str | None = None
+    tasks: list[MigrationTask] = Field(default_factory=list)
+
+
+class MigrationPlanResponse(BaseModel):
+    plan_id: str
+    name: str
+    description: str | None = None
+    created_date: str
+    owner: str | None = None
+    target_cloud: CloudProvider
+    target_region: str | None = None
+    tasks: list[MigrationTask]
+    total_vms: int
+    completed_vms: int
+    progress_percentage: int
