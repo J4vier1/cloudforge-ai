@@ -1,3 +1,32 @@
+const REGIONS = {
+  azure: [
+    { value: "eastus", label: "East US" },
+    { value: "eastus2", label: "East US 2" },
+    { value: "westus2", label: "West US 2" },
+    { value: "westeurope", label: "West Europe" },
+    { value: "northeurope", label: "North Europe" },
+    { value: "brazilsouth", label: "Brazil South" },
+    { value: "mexicocentral", label: "Mexico Central" },
+    { value: "southeastasia", label: "Southeast Asia" },
+  ],
+  aws: [
+    { value: "us-east-1", label: "US East (N. Virginia)" },
+    { value: "us-east-2", label: "US East (Ohio)" },
+    { value: "us-west-2", label: "US West (Oregon)" },
+    { value: "eu-west-1", label: "Europe (Ireland)" },
+    { value: "eu-central-1", label: "Europe (Frankfurt)" },
+    { value: "sa-east-1", label: "South America (São Paulo)" },
+    { value: "ap-southeast-1", label: "Asia Pacific (Singapore)" },
+  ],
+  huawei: [
+    { value: "la-north-4", label: "LA North 4 (Bogotá)" },
+    { value: "la-santiago", label: "LA South (Santiago)" },
+    { value: "cn-north-4", label: "CN North 4 (Beijing)" },
+    { value: "ap-southeast-1", label: "AP Southeast 1 (Guangzhou)" },
+    { value: "eu-west-101", label: "EU West 101 (Dublin)" },
+  ],
+};
+
 const sampleCsv = `vm_name,application_name,environment,business_owner,technical_owner,operating_system,os_version,current_platform,datacenter_location,target_cloud,target_region,cpu_cores,memory_gb,storage_gb,disk_count,average_cpu_percent,peak_cpu_percent,average_memory_percent,peak_memory_percent,average_disk_iops,average_disk_throughput_mbps,network_in_mbps,network_out_mbps,criticality,uptime_requirement,rpo_minutes,rto_minutes,backup_policy,maintenance_window,uses_active_directory,domain_joined,requires_static_ip,requires_vpn_connectivity,internet_access_required,listening_ports,dependency_flows,compliance_requirements,migration_notes
 erp-app-01,ERP,prod,Finance,IT Operations,windows,Windows Server 2019,VMware,Mexico City DC1,azure,eastus,8,32,500,3,55,82,68,91,1200,80,25,18,high,99.9%,60,240,"Daily, 30 days","Sunday 01:00-04:00",true,true,true,true,false,"443;3389","erp-app-01->sql-prod-01:1433;erp-app-01->dc-01:389;erp-app-01->fileserver-01:445",ISO 27001,Requires vendor validation before cutover
 sql-prod-01,ERP Database,prod,Finance,DBA Team,windows,Windows Server 2019,VMware,Mexico City DC1,azure,eastus,16,64,2048,6,62,88,74,93,5500,240,40,35,mission_critical,99.95%,15,120,"Hourly, 35 days","Sunday 00:00-03:00",true,true,true,true,false,"1433;3389","sql-prod-01->dc-01:389;erp-app-01->sql-prod-01:1433",ISO 27001,Requires database backup validation and performance testing
@@ -15,6 +44,8 @@ const elements = {
   apiStatus: document.querySelector("#apiStatus"),
   inventoryFile: document.querySelector("#inventoryFile"),
   fileName: document.querySelector("#fileName"),
+  targetCloud: document.querySelector("#targetCloud"),
+  targetRegion: document.querySelector("#targetRegion"),
   loadSampleBtn: document.querySelector("#loadSampleBtn"),
   exportJsonBtn: document.querySelector("#exportJsonBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
@@ -44,6 +75,11 @@ async function checkApi() {
 async function uploadInventory(file) {
   const formData = new FormData();
   formData.append("file", file);
+
+  const cloud = elements.targetCloud.value;
+  const region = elements.targetRegion.value;
+  if (cloud) formData.append("target_cloud", cloud);
+  if (region) formData.append("target_region", region);
 
   setBusy(true);
   try {
@@ -260,6 +296,15 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+elements.targetCloud.addEventListener("change", () => {
+  const cloud = elements.targetCloud.value;
+  const regions = REGIONS[cloud] || [];
+  elements.targetRegion.innerHTML =
+    `<option value="">From CSV</option>` +
+    regions.map((r) => `<option value="${r.value}">${r.label}</option>`).join("");
+  elements.targetRegion.disabled = regions.length === 0;
+});
 
 elements.inventoryFile.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
